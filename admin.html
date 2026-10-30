@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administração - Mixx Internet</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #e9ecef; margin: 0; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; background: #343a40; color: white; padding: 15px 20px; border-radius: 8px; margin-bottom: 20px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .card.full-width { grid-column: span 2; }
+        h3 { margin-top: 0; color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        input, select { width: 100%; padding: 10px; margin: 8px 0 15px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; font-weight: bold; }
+        button.btn-warning { background-color: #ffc107; color: black; }
+        button.btn-primary { background-color: #007bff; }
+        button:hover { opacity: 0.9; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h2>Painel do Provedor - Mixx Internet (Admin)</h2>
+    </div>
+
+    <div class="grid">
+        <!-- BLOCO 1: ALTERAR ESTADO (CORTE/DESBLOQUEIO) -->
+        <div class="card">
+            <h3>Alterar Estado da Ligação</h3>
+            <form id="formStatus">
+                <label>CPF do Cliente:</label>
+                <input type="text" id="statusCpf" placeholder="Ex: 12345678900" required>
+                
+                <label>Novo Estado:</label>
+                <select id="statusConexao">
+                    <option value="Ativa">Ativa</option>
+                    <option value="Bloqueada">Bloqueada (Corte por Inadimplência)</option>
+                    <option value="Reduzida">Velocidade Reduzida</option>
+                </select>
+
+                <button type="submit" class="btn-warning">Atualizar Ligação</button>
+            </form>
+        </div>
+
+        <!-- BLOCO 2: GERAR NOVA FATURA -->
+        <div class="card">
+            <h3>Gerar Nova Fatura</h3>
+            <form id="formFatura">
+                <label>CPF do Cliente:</label>
+                <input type="text" id="faturaCpf" placeholder="Ex: 12345678900" required>
+                
+                <label>Data de Vencimento:</label>
+                <input type="date" id="faturaVencimento" required>
+                
+                <label>Valor (R$):</label>
+                <input type="number" id="faturaValor" step="0.01" placeholder="119.90" required>
+
+                <label>Linha Digitável do Boleto:</label>
+                <input type="text" id="faturaLinha" placeholder="Código de barras..." required>
+
+                <button type="submit" class="btn-primary">Emitir Fatura</button>
+            </form>
+        </div>
+
+        <!-- BLOCO 3: REGISTAR NOVO CLIENTE -->
+        <div class="card full-width">
+            <h3>Registar Novo Cliente</h3>
+            <form id="formNovoCliente">
+                <div class="grid">
+                    <div>
+                        <label>CPF:</label>
+                        <input type="text" id="novoCpf" required>
+                        <label>Senha de Acesso:</label>
+                        <input type="text" id="novaSenha" required>
+                    </div>
+                    <div>
+                        <label>Nome do Plano:</label>
+                        <input type="text" id="novoPlanoNome" placeholder="Ex: Fibra 1 Giga" required>
+                        <label>Tecnologia:</label>
+                        <input type="text" id="novoPlanoTec" value="FTTH (Fibra Óptica)" required>
+                        <label>Valor Mensal (R$):</label>
+                        <input type="number" id="novoPlanoValor" step="0.01" required>
+                    </div>
+                </div>
+                <button type="submit">Registar no Sistema</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 1. Lógica para Alterar o Estado da Ligação
+    document.getElementById('formStatus').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const cpf = document.getElementById('statusCpf').value;
+        const status = document.getElementById('statusConexao').value;
+
+        const resposta = await fetch(`http://127.0.0.1:8000/api/admin/clientes/${cpf}/status`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status_conexao: status })
+        });
+        
+        if(resposta.ok) alert(`Sucesso: A ligação do cliente foi alterada para ${status}.`);
+        else alert("Erro: Cliente não encontrado ou falha no servidor.");
+    });
+
+    // 2. Lógica para Gerar Nova Fatura
+    document.getElementById('formFatura').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const dados = {
+            cliente_cpf: document.getElementById('faturaCpf').value,
+            vencimento: document.getElementById('faturaVencimento').value,
+            valor: parseFloat(document.getElementById('faturaValor').value),
+            linha_digitavel_boleto: document.getElementById('faturaLinha').value
+        };
+
+        const resposta = await fetch('http://127.0.0.1:8000/api/admin/faturas', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(dados)
+        });
+
+        if(resposta.ok) {
+            alert("Fatura gerada com sucesso!");
+            e.target.reset(); // Limpa o formulário
+        } else alert("Erro ao gerar fatura. Verifique o CPF.");
+    });
+
+    // 3. Lógica para Registar Novo Cliente
+    document.getElementById('formNovoCliente').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const dados = {
+            cpf: document.getElementById('novoCpf').value,
+            senha: document.getElementById('novaSenha').value,
+            nome_plano: document.getElementById('novoPlanoNome').value,
+            tecnologia: document.getElementById('novoPlanoTec').value,
+            valor_mensalidade: parseFloat(document.getElementById('novoPlanoValor').value)
+        };
+
+        const resposta = await fetch('http://127.0.0.1:8000/api/admin/clientes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(dados)
+        });
+
+        if(resposta.ok) {
+            alert("Novo cliente ativado na rede com sucesso!");
+            e.target.reset();
+        } else {
+            const erro = await resposta.json();
+            alert("Erro: " + erro.detail);
+        }
+    });
+</script>
+
+</body>
+</html>

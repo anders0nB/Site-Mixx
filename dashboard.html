@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel do Cliente - Mixx Internet</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f9; margin: 0; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; background: #0056b3; color: white; padding: 15px 20px; border-radius: 8px; margin-bottom: 20px; }
+        .header button { background: #ff4d4d; border: none; color: white; padding: 8px 15px; border-radius: 4px; cursor: pointer; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        h3 { margin-top: 0; color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { text-align: left; padding: 12px; border-bottom: 1px solid #ddd; }
+        th { background-color: #f8f9fa; }
+        .status-Paga { color: green; font-weight: bold; }
+        .status-Aberta { color: orange; font-weight: bold; }
+        .btn-boleto { background: #28a745; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;}
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h2>Mixx Internet - Central do Assinante</h2>
+        <button onclick="sair()">Sair (Logout)</button>
+    </div>
+
+    <div class="card" id="dadosPlano">
+        <h3>O Meu Plano</h3>
+        <p>A carregar informações da ligação...</p>
+    </div>
+
+    <div class="card">
+        <h3>Faturas</h3>
+        <table id="tabelaFaturas">
+            <thead>
+                <tr>
+                    <th>Vencimento</th>
+                    <th>Valor</th>
+                    <th>Estado</th>
+                    <th>Ação</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td colspan="4">A carregar faturas...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    // 1. Verifica se o cliente tem o token na memória assim que a página abre
+    const token = localStorage.getItem('mixx_token');
+    if (!token) {
+        window.location.href = 'index.html'; // Bloqueia o acesso e redireciona para o login
+    }
+
+    // 2. Função para consultar os dados do plano na API
+    async function carregarPlano() {
+        try {
+            const resposta = await fetch('http://127.0.0.1:8000/api/cliente/plano', {
+                method: 'GET',
+                headers: { 
+                    'Authorization': 'Bearer ' + token // Envio da chave de segurança
+                }
+            });
+
+            if (resposta.ok) {
+                const plano = await resposta.json();
+                document.getElementById('dadosPlano').innerHTML = `
+                    <h3>O Meu Plano</h3>
+                    <p><strong>Pacote:</strong> ${plano.nome_plano} (${plano.tecnologia})</p>
+                    <p><strong>Mensalidade:</strong> R$ ${plano.valor_mensalidade.toFixed(2)}</p>
+                    <p><strong>Estado da Ligação:</strong> <span style="color: ${plano.status_conexao === 'Ativa' ? 'green' : 'red'}; font-weight: bold;">${plano.status_conexao}</span></p>
+                `;
+            } else {
+                verificarErroSessao(resposta.status);
+            }
+        } catch (error) {
+            console.error("Erro ao carregar o plano:", error);
+        }
+    }
+
+    // 3. Função para carregar as faturas e desenhar os botões
+    async function carregarFaturas() {
+        try {
+            const resposta = await fetch('http://127.0.0.1:8000/api/cliente/faturas', {
+                method: 'GET',
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+
+            if (resposta.ok) {
+                const faturas = await resposta.json();
+                const tbody = document.querySelector('#tabelaFaturas tbody');
+                tbody.innerHTML = ''; 
+
+                faturas.forEach(fatura => {
+                    const botaoCopiar = fatura.status === 'Aberta' 
+                        ? `<button class="btn-boleto" onclick="copiarBoleto('${fatura.linha_digitavel_boleto}')">Copiar Código</button>` 
+                        : '';
+                    
+                    // Novo botão de PDF (aparece em todas as faturas)
+                    const botaoPDF = `<button onclick="baixarPDF(${fatura.id_fatura})" style="background:#dc3545; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:12px; margin-left:5px;">Baixar PDF</button>`;
+
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${fatura.vencimento}</td>
+                            <td>R$ ${fatura.valor.toFixed(2)}</td>
+                            <td class="status-${fatura.status}">${fatura.status}</td>
+                            <td>${botaoCopiar} ${botaoPDF}</td>
+                        </tr>
+                    `;
+                });
+            }
+        } catch (error) {
+            console.error("Erro ao carregar faturas:", error);
+        }
+    }
+
+    // 4. Nova função para solicitar a geração do PDF ao back-end
+    async function baixarPDF(id_fatura) {
+        try {
+            const resposta = await fetch(`http://127.0.0.1:8000/api/cliente/faturas/${id_fatura}/pdf`, {
+                method: 'GET',
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+
+            if (resposta.ok) {
+                // Converte a resposta do servidor num ficheiro físico (Blob) no navegador
+                const blob = await resposta.blob();
+                
+                // Cria um link invisível e clica nele automaticamente para forçar o download
+                const link = document.createElement('a');
+                link.href = window.URL.createObjectURL(blob);
+                link.download = `Fatura_Mixx_${id_fatura}.pdf`;
+                document.body.appendChild(link);
+                link.click();
+                link.remove(); // Limpa o código depois do download
+            } else {
+                alert("Erro ao tentar gerar o documento PDF.");
+            }
+        } catch (error) {
+            console.error("Erro na transferência:", error);
+        }
+    }
+    
+
+    // Função utilitária para copiar o código de barras
+    function copiarBoleto(linha) {
+        navigator.clipboard.writeText(linha);
+        alert("Linha digitável copiada: " + linha);
+    }
+
+    // Tratamento de segurança: se o token tiver expirado na API (após 30 min)
+    function verificarErroSessao(status) {
+        if (status === 401) {
+            alert("A sua sessão expirou. Por favor, inicie sessão novamente.");
+            sair();
+        }
+    }
+
+    // Limpa a memória e volta para a página inicial
+    function sair() {
+        localStorage.removeItem('mixx_token');
+        window.location.href = 'index.html';
+    }
+
+    // Dispara a comunicação com o servidor em Python assim que o HTML é renderizado
+    window.onload = function() {
+        carregarPlano();
+        carregarFaturas();
+    };
+</script>
+
+</body>
+</html>

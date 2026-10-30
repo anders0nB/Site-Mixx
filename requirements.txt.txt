@@ -1,0 +1,6 @@
+fastapi
+uvicorn
+sqlalchemy
+pyjwt
+python-multipart
+fpdf2
