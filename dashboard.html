@@ -54,7 +54,7 @@
     // 1. Verifica se o cliente tem o token na memória assim que a página abre
     const token = localStorage.getItem('mixx_token');
     if (!token) {
-        window.location.href = 'index.html'; // Bloqueia o acesso e redireciona para o login
+        window.location.href = 'login.html'; // Bloqueia o acesso e redireciona para o login
     }
 
     // 2. Função para consultar os dados do plano na API
