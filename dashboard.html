@@ -60,7 +60,7 @@
     // 2. Função para consultar os dados do plano na API
     async function carregarPlano() {
         try {
-            const resposta = await fetch('http://127.0.0.1:8000/api/cliente/plano', {
+            const resposta = await fetch('https://site-mixx.onrender.com/api/cliente/plano', {
                 method: 'GET',
                 headers: { 
                     'Authorization': 'Bearer ' + token // Envio da chave de segurança
@@ -86,7 +86,7 @@
     // 3. Função para carregar as faturas e desenhar os botões
     async function carregarFaturas() {
         try {
-            const resposta = await fetch('http://127.0.0.1:8000/api/cliente/faturas', {
+            const resposta = await fetch('https://site-mixx.onrender.com/api/cliente/faturas', {
                 method: 'GET',
                 headers: { 'Authorization': 'Bearer ' + token }
             });
@@ -122,7 +122,7 @@
     // 4. Nova função para solicitar a geração do PDF ao back-end
     async function baixarPDF(id_fatura) {
         try {
-            const resposta = await fetch(`http://127.0.0.1:8000/api/cliente/faturas/${id_fatura}/pdf`, {
+            const resposta = await fetch(`https://site-mixx.onrender.com/api/cliente/faturas/${id_fatura}/pdf`, {
                 method: 'GET',
                 headers: { 'Authorization': 'Bearer ' + token }
             });

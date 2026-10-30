@@ -98,7 +98,7 @@
         const cpf = document.getElementById('statusCpf').value;
         const status = document.getElementById('statusConexao').value;
 
-        const resposta = await fetch(`http://127.0.0.1:8000/api/admin/clientes/${cpf}/status`, {
+        const resposta = await fetch(`https://site-mixx.onrender.com/api/admin/clientes/${cpf}/status`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ status_conexao: status })
@@ -118,7 +118,7 @@
             linha_digitavel_boleto: document.getElementById('faturaLinha').value
         };
 
-        const resposta = await fetch('http://127.0.0.1:8000/api/admin/faturas', {
+        const resposta = await fetch('https://site-mixx.onrender.com/api/admin/faturas', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(dados)
@@ -141,7 +141,7 @@
             valor_mensalidade: parseFloat(document.getElementById('novoPlanoValor').value)
         };
 
-        const resposta = await fetch('http://127.0.0.1:8000/api/admin/clientes', {
+        const resposta = await fetch('https://site-mixx.onrender.com/api/admin/clientes', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(dados)
